@@ -15,7 +15,7 @@ def transcribe_streaming(stream_file):
     stream = [content]
     requests = (types.StreamingRecognizeRequest(audio_content=chunk)
                 for chunk in stream)
-
+    
     config = types.RecognitionConfig(
         encoding=enums.RecognitionConfig.AudioEncoding.LINEAR16,
         sample_rate_hertz=44100,
@@ -37,8 +37,9 @@ def transcribe_streaming(stream_file):
             for alternative in alternatives:
                 print('Confidence: {}'.format(alternative.confidence))
                 print(u'Transcript: {}'.format(alternative.transcript))
+                
 
 def main():
-    transcribe_streaming('out.wav')
+    transcribe_streaming('testMeNows.wav')
 
 main()
