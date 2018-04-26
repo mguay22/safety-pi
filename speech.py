@@ -75,6 +75,7 @@ def addUser(id):
 
 def main():
     output = transcribeFile("go")
+    print(output)
     result = queryDatabase(output)
 
     if result:
