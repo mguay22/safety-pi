@@ -32,9 +32,56 @@ def transcribeFile(fileName):
     # Detects speech in the audio file
     response = client.recognize(config, audio)
     for result in response.results:
-        print('Transcript: {}'.format(result.alternatives[0].transcript))
+        output = result.alternatives[0].transcript
+
+    return output
+
+def queryDatabase(output):
+    import mysql.connector
+
+    cnx = mysql.connector.connect(user='mguay', password='ramsamsam123', host='localhost', database='safetypi')
+    cursor = cnx.cursor()
+    query = ("SELECT * FROM USERS;")
+    cursor.execute(query)
+
+    for id in cursor:
+        for value in id:
+            if value == output:
+                cursor.close()
+                cnx.close()
+                return True
+                
+    cursor.close()
+    cnx.close()
+    return False
+
+
+def addUser(id):
+    import mysql.connector
+
+    cnx = mysql.connector.connect(user='mguay', password='ramsamsam123', host='localhost', database='safetypi')
+    cursor = cnx.cursor()
+
+    add_user = ("INSERT INTO USERS (id) VALUES (" + str(id) + ")")
+
+    cursor.execute(add_user)
+
+    # Make sure data is committed to the database
+    cnx.commit()
+
+    cursor.close()
+    cnx.close()
+
 
 def main():
-    transcribeFile("go")
+    output = transcribeFile("go")
+    result = queryDatabase(output)
+
+    if result:
+        # User has been authenticated
+        print("Welcome")
+    else:
+        print("Please try again")
+        # Try again two more times
 
 main()
