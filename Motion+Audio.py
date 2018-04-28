@@ -4,7 +4,7 @@ from gpiozero import MotionSensor
 #Imports for pyaudio
 import pyaudio
 import wave
-
+    
 
 def recordAudio():
     FORMAT = pyaudio.paInt32
