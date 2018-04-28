@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": 400,
+    "message": "Invalid JSON payload received. Expected , or } after key:value pair.\n:{'text': 'Hello (u'michael',) have a ni\n                    ^",
+    "status": "INVALID_ARGUMENT"
+  }
+}

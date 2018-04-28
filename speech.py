@@ -9,6 +9,7 @@ import io
 from google.cloud import speech
 from google.cloud.speech import enums
 from google.cloud.speech import types
+import nexmo
 
 
 def recordAudio():
@@ -16,7 +17,7 @@ def recordAudio():
     CHANNELS = 1
     RATE = 44100
     CHUNK = 1024
-    RECORD_SECONDS = 5
+    RECORD_SECONDS = 1
     WAVE_OUTPUT_FILENAME = "go.wav"
      
     audio = pyaudio.PyAudio()
@@ -71,8 +72,7 @@ def transcribeFile(fileName):
     # Detects speech in the audio file
     response = client.recognize(config, audio)
 
-    if response is None:
-        output = ''
+    output = ''
 
     for result in response.results:
         output = result.alternatives[0].transcript
@@ -82,7 +82,7 @@ def transcribeFile(fileName):
 def queryDatabase(output):
     cnx = mysql.connector.connect(user='mguay', password='ramsamsam123', host='localhost', database='safetypi')
     cursor = cnx.cursor()
-    query = ("SELECT * FROM USERS;")
+    query = ("SELECT * FROM users;")
     cursor.execute(query)
 
     for id in cursor:
@@ -92,20 +92,6 @@ def queryDatabase(output):
 
     return False
 
-
-def addUser(id):
-    cnx = mysql.connector.connect(user='mguay', password='ramsamsam123', host='localhost', database='safetypi')
-    cursor = cnx.cursor()
-
-    add_user = ("INSERT INTO USERS (id) VALUES (" + str(id) + ")")
-
-    cursor.execute(add_user)
-
-    # Make sure data is committed to the database
-    cnx.commit()
-
-    cursor.close()
-    cnx.close()
 
 def textToSpeech(text):
     os.system("curl -H \"Authorization: Bearer \"$(gcloud auth application-default print-access-token) -H \"Content-Type: application/json; charset=utf-8\" --data \"{\'input\':{\'text\': \'" + text + "\'},\'voice\':{\'languageCode\':\'en-gb\',\'name\':\'en-GB-Standard-A\',\'ssmlGender\':\'FEMALE\'},\'audioConfig\':{\'audioEncoding\':\'MP3\'}}\" \"https://texttospeech.googleapis.com/v1beta1/text:synthesize\" > synthesize-output.json")
@@ -124,8 +110,29 @@ def textToSpeech(text):
     os.remove("synthesize-output-base64.txt")
 
     # Then play audio
-    
+    os.system("omxplayer synthesized-audio.mp3")
+    os.remove("synthesized-audio.mp3")
 
+def getName(output):
+    cnx = mysql.connector.connect(user='mguay', password='ramsamsam123', host='localhost', database='safetypi')
+    cursor = cnx.cursor()
+    query = ("SELECT name FROM users where id='" + output + "';")
+    cursor.execute(query)
+
+    for id in cursor:
+        for value in id:
+            return value
+
+def textAdmin():
+    client = nexmo.Client(key='fe9c0087', secret='b91e5377e5a92cc6')
+    response = client.send_message({'from': '12017713180', 'to': '12038028314', 'text': 'Alert! There has been a breach reported by your SafetyPi.'})
+    response = response['messages'][0]
+
+    if response['status'] == '0':
+        print('Sent message', response['message-id'])
+        print('Remaining balance is', response['remaining-balance'])
+    else:
+        print('Error:', response['error-text'])
 
 
 def main():
@@ -134,13 +141,8 @@ def main():
         count = 1
         authenticated = False
         if pir.motion_detected:
+            textToSpeech("Hello, please state your identification code to pass")
             while (authenticated == False):
-                if (count == 4):
-                    # Send text to admin
-                    print("Intruder alert")
-                    return
-
-                print("Motion detected")
                 recordAudio()
                 output = transcribeFile("go")
                 os.remove("go.wav")
@@ -149,18 +151,23 @@ def main():
                 if result:
                     # User has been authenticated
                     # Play authentication sound
-                    print("Welcome")
+                    name = str(getName(output))
+                    textToSpeech("Hello " + name + " have a nice day")
                     authenticated = True
-                    return
+
                 else:
-                    # Play incorrect code sound, let the user try again, max 3 times
-                    print("Please try again")
                     count += 1
-            
+                    if (count == 4):
+                        # Send text to admin
+                        textToSpeech("Intruder alert! Notification of breach has been sent to the system administrator and police have been requested!")
+                        textAdmin()
+                        authenticated = True
+                    else:
+                        textToSpeech("Incorrect code, please try again. You have" + str(4 - count) + "attempts remaining")
+
+            time.sleep(5)
         else:
             print("No motion detected")
-
-    # textToSpeech("hello")
 
 
 main()
